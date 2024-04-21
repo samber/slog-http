@@ -16,7 +16,7 @@ func Recovery(next http.Handler) http.Handler {
 
 				fmt.Printf("panic recovered: %v\n %s", err, buf)
 				w.WriteHeader(500)
-				w.Write([]byte{})
+				_, _ = w.Write([]byte{})
 			}
 		}()
 
