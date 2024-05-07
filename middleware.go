@@ -250,6 +250,16 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 	}
 }
 
+// GetRequestID returns the request identifier
+func GetRequestID(r *http.Request) string {
+	requestID := r.Context().Value(requestIDCtx)
+	if id, ok := requestID.(string); ok {
+		return id
+	}
+
+	return ""
+}
+
 func AddCustomAttributes(r *http.Request, attr slog.Attr) {
 	v := r.Context().Value(customAttributesCtxKey)
 	if v == nil {
