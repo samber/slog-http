@@ -13,10 +13,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	customAttributesCtxKey = "slog-http.custom-attributes"
-	requestIDCtx           = "slog-http.request-id"
-)
+type customAttributesCtxKeyType struct{}
+type requestIDCtxKeyType struct{}
+
+var customAttributesCtxKey = customAttributesCtxKeyType{}
+var requestIDCtxKey = requestIDCtxKeyType{}
 
 var (
 	TraceIDKey   = "trace-id"
@@ -119,7 +120,7 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 					requestID = uuid.New().String()
 					r.Header.Set(RequestIDHeaderKey, requestID)
 				}
-				r = r.WithContext(context.WithValue(r.Context(), requestIDCtx, requestID))
+				r = r.WithContext(context.WithValue(r.Context(), requestIDCtxKey, requestID))
 			}
 
 			// dump request body
@@ -253,7 +254,7 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 
 // GetRequestID returns the request identifier
 func GetRequestID(r *http.Request) string {
-	requestID := r.Context().Value(requestIDCtx)
+	requestID := r.Context().Value(requestIDCtxKey)
 	if id, ok := requestID.(string); ok {
 		return id
 	}
