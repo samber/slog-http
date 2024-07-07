@@ -254,7 +254,12 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 
 // GetRequestID returns the request identifier
 func GetRequestID(r *http.Request) string {
-	requestID := r.Context().Value(requestIDCtxKey)
+	return GetRequestIDFromContext(r.Context())
+}
+
+// GetRequestIDFromContext returns the request identifier from the context
+func GetRequestIDFromContext(ctx context.Context) string {
+	requestID := ctx.Value(requestIDCtxKey)
 	if id, ok := requestID.(string); ok {
 		return id
 	}
