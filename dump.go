@@ -55,15 +55,15 @@ func (r *bodyWriter) WriteHeader(code int) {
 
 // implements http.Flusher
 func (w *bodyWriter) Flush() {
-	if w.ResponseWriter.(http.Flusher) != nil {
-		w.ResponseWriter.(http.Flusher).Flush()
+	if f, ok := w.ResponseWriter.(http.Flusher); ok {
+		f.ResponseWriter.(http.Flusher).Flush()
 	}
 }
 
 // implements http.Hijacker
 func (w *bodyWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	if w.ResponseWriter.(http.Hijacker) != nil {
-		return w.ResponseWriter.(http.Hijacker).Hijack()
+	if hi, ok := w.ResponseWriter.(http.Hijacker); ok {
+		return hi.ResponseWriter.(http.Hijacker).Hijack()
 	}
 
 	return nil, nil, errors.New("Hijack not supported")
