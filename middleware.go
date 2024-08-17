@@ -20,8 +20,8 @@ var customAttributesCtxKey = customAttributesCtxKeyType{}
 var requestIDCtxKey = requestIDCtxKeyType{}
 
 var (
-	TraceIDKey   = "trace-id"
-	SpanIDKey    = "span-id"
+	TraceIDKey   = "trace_id"
+	SpanIDKey    = "span_id"
 	RequestIDKey = "id"
 
 	RequestBodyMaxSize  = 64 * 1024 // 64KB
@@ -252,12 +252,12 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 	}
 }
 
-// GetRequestID returns the request identifier
+// GetRequestID returns the request identifier.
 func GetRequestID(r *http.Request) string {
 	return GetRequestIDFromContext(r.Context())
 }
 
-// GetRequestIDFromContext returns the request identifier from the context
+// GetRequestIDFromContext returns the request identifier from the context.
 func GetRequestIDFromContext(ctx context.Context) string {
 	requestID := ctx.Value(requestIDCtxKey)
 	if id, ok := requestID.(string); ok {
@@ -267,6 +267,7 @@ func GetRequestIDFromContext(ctx context.Context) string {
 	return ""
 }
 
+// AddCustomAttributes adds custom attributes to the request context.
 func AddCustomAttributes(r *http.Request, attr slog.Attr) {
 	v := r.Context().Value(customAttributesCtxKey)
 	if v == nil {
