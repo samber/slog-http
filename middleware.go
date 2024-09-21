@@ -143,7 +143,7 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 				baseAttributes := []slog.Attr{}
 
 				requestAttributes := []slog.Attr{
-					slog.Time("time", start),
+					slog.Time("time", start.UTC()),
 					slog.String("method", method),
 					slog.String("host", host),
 					slog.String("path", path),
@@ -153,7 +153,7 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 				}
 
 				responseAttributes := []slog.Attr{
-					slog.Time("time", end),
+					slog.Time("time", end.UTC()),
 					slog.Duration("latency", latency),
 					slog.Int("status", status),
 				}
