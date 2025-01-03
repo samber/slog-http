@@ -7,6 +7,8 @@ import (
 
 	"log/slog"
 
+	"log"
+
 	slogformatter "github.com/samber/slog-formatter"
 	sloghttp "github.com/samber/slog-http"
 )
@@ -52,7 +54,10 @@ func main() {
 	handler = sloghttp.New(logger.WithGroup("http"))(handler)
 
 	// Start server
-	http.ListenAndServe(":4242", handler)
+	err := http.ListenAndServe(":4242", handler)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	// output:
 	// time=2023-04-10T14:00:00Z level=INFO msg="Success" env=production http.status=200 http.method=GET http.path=/ http.ip=::1 http.latency=25.958µs http.user-agent=curl/7.77.0 http.time=2023-04-10T14:00:00Z http.request-id=229c7fc8-64f5-4467-bc4a-940700503b0d

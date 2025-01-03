@@ -131,6 +131,13 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 			bw := newBodyWriter(w, ResponseBodyMaxSize, config.WithResponseBody)
 
 			defer func() {
+				// Pass thru filters and skip early the code below, to prevent unnecessary processing.
+				for _, filter := range config.Filters {
+					if !filter(bw, r) {
+						return
+					}
+				}
+
 				status := bw.Status()
 				method := r.Method
 				host := r.Host
@@ -228,12 +235,6 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 					switch attrs := v.(type) {
 					case []slog.Attr:
 						attributes = append(attributes, attrs...)
-					}
-				}
-
-				for _, filter := range config.Filters {
-					if !filter(bw, r) {
-						return
 					}
 				}
 
