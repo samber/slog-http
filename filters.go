@@ -3,6 +3,7 @@ package sloghttp
 import (
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -10,7 +11,9 @@ type Filter func(w WrapResponseWriter, r *http.Request) bool
 
 // Basic
 func Accept(filter Filter) Filter { return filter }
-func Ignore(filter Filter) Filter { return filter }
+func Ignore(filter Filter) Filter {
+	return func(w WrapResponseWriter, r *http.Request) bool { return !filter(w, r) }
+}
 
 // Method
 func AcceptMethod(methods ...string) Filter {
@@ -44,25 +47,13 @@ func IgnoreMethod(methods ...string) Filter {
 // Status
 func AcceptStatus(statuses ...int) Filter {
 	return func(w WrapResponseWriter, r *http.Request) bool {
-		for _, status := range statuses {
-			if status == w.Status() {
-				return true
-			}
-		}
-
-		return false
+		return slices.Contains(statuses, w.Status())
 	}
 }
 
 func IgnoreStatus(statuses ...int) Filter {
 	return func(w WrapResponseWriter, r *http.Request) bool {
-		for _, status := range statuses {
-			if status == w.Status() {
-				return false
-			}
-		}
-
-		return true
+		return !slices.Contains(statuses, w.Status())
 	}
 }
 
@@ -109,25 +100,13 @@ func IgnoreStatusLessThanOrEqual(status int) Filter {
 // Path
 func AcceptPath(urls ...string) Filter {
 	return func(w WrapResponseWriter, r *http.Request) bool {
-		for _, url := range urls {
-			if r.URL.Path == url {
-				return true
-			}
-		}
-
-		return false
+		return slices.Contains(urls, r.URL.Path)
 	}
 }
 
 func IgnorePath(urls ...string) Filter {
 	return func(w WrapResponseWriter, r *http.Request) bool {
-		for _, url := range urls {
-			if r.URL.Path == url {
-				return false
-			}
-		}
-
-		return true
+		return !slices.Contains(urls, r.URL.Path)
 	}
 }
 
@@ -230,25 +209,13 @@ func IgnorePathMatch(regs ...regexp.Regexp) Filter {
 // Host
 func AcceptHost(hosts ...string) Filter {
 	return func(w WrapResponseWriter, r *http.Request) bool {
-		for _, host := range hosts {
-			if r.URL.Host == host {
-				return true
-			}
-		}
-
-		return false
+		return slices.Contains(hosts, r.URL.Host)
 	}
 }
 
 func IgnoreHost(hosts ...string) Filter {
 	return func(w WrapResponseWriter, r *http.Request) bool {
-		for _, host := range hosts {
-			if r.URL.Host == host {
-				return false
-			}
-		}
-
-		return true
+		return !slices.Contains(hosts, r.URL.Host)
 	}
 }
 
