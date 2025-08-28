@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"time"
 )
 
 var _ WrapResponseWriter = (*bodyWriter)(nil)
@@ -37,12 +39,10 @@ type bodyWriter struct {
 func (w *bodyWriter) Write(b []byte) (int, error) {
 	if w.body != nil {
 		if w.body.Len()+len(b) > w.maxSize {
-			w.body.Write(b[:w.maxSize-w.body.Len()])
-		} else {
-			w.body.Write(b)
+			w.body.Truncate(len(b))
 		}
+		w.body.Write(b)
 	}
-
 	w.bytes += len(b) //nolint:staticcheck
 	return w.ResponseWriter.Write(b)
 }
@@ -67,6 +67,21 @@ func (w *bodyWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	}
 
 	return nil, nil, errors.New("Hijack not supported")
+}
+
+// implements http.ResponseController (if supported by underlying ResponseWriter)
+func (w bodyWriter) SetWriteDeadline(t time.Time) error {
+	if d, ok := w.ResponseWriter.(interface {
+		SetWriteDeadline(t time.Time) error
+	}); ok {
+		return d.SetWriteDeadline(t)
+	}
+	return fmt.Errorf("ResponseWriter does not support SetWriteDeadline")
+}
+
+// Unwrap implements http.ResponseController (if supported by underlying ResponseWriter)
+func (w *bodyWriter) Unwrap() http.ResponseWriter {
+	return w.ResponseWriter
 }
 
 func (w *bodyWriter) Status() int {
@@ -106,7 +121,7 @@ type bodyReader struct {
 // implements io.Reader
 func (r *bodyReader) Read(b []byte) (int, error) {
 	n, err := r.ReadCloser.Read(b)
-	if r.body != nil {
+	if r.body != nil && r.body.Len() < r.maxSize {
 		if r.body.Len()+n > r.maxSize {
 			r.body.Write(b[:r.maxSize-r.body.Len()])
 		} else {
@@ -120,7 +135,7 @@ func (r *bodyReader) Read(b []byte) (int, error) {
 func newBodyReader(reader io.ReadCloser, maxSize int, recordBody bool) *bodyReader {
 	var body *bytes.Buffer
 	if recordBody {
-		body = bytes.NewBufferString("")
+		body = new(bytes.Buffer)
 	}
 
 	return &bodyReader{
