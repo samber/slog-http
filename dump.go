@@ -4,11 +4,9 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
-	"time"
 )
 
 var _ WrapResponseWriter = (*bodyWriter)(nil)
@@ -69,17 +67,7 @@ func (w *bodyWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return nil, nil, errors.New("Hijack not supported")
 }
 
-// implements http.ResponseController (if supported by underlying ResponseWriter)
-func (w bodyWriter) SetWriteDeadline(t time.Time) error {
-	if d, ok := w.ResponseWriter.(interface {
-		SetWriteDeadline(t time.Time) error
-	}); ok {
-		return d.SetWriteDeadline(t)
-	}
-	return fmt.Errorf("ResponseWriter does not support SetWriteDeadline")
-}
-
-// Unwrap implements http.ResponseController (if supported by underlying ResponseWriter)
+// Unwrap implements the ability to use underlying http.ResponseController
 func (w *bodyWriter) Unwrap() http.ResponseWriter {
 	return w.ResponseWriter
 }
