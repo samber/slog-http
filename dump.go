@@ -125,7 +125,7 @@ func (r *bodyReader) Read(b []byte) (int, error) {
 func newBodyReader(reader io.ReadCloser, maxSize int, recordBody bool) *bodyReader {
 	var body *bytes.Buffer
 	if recordBody {
-		body = bytes.NewBufferString("")
+		body = new(bytes.Buffer)
 	}
 
 	return &bodyReader{
