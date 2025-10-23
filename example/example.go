@@ -1,13 +1,11 @@
 package main
 
 import (
+	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
-
-	"log/slog"
-
-	"log"
 
 	slogformatter "github.com/samber/slog-formatter"
 	sloghttp "github.com/samber/slog-http"
@@ -37,7 +35,10 @@ func main() {
 		w.Write([]byte("Hello, World!"))
 	}))
 	mux.Handle("/foobar/42", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		sloghttp.AddCustomAttributes(r, slog.String("foo", "bar"))
+		sloghttp.AddCustomAttributes(r,
+			slog.String("foo", "bar"),
+			slog.Int("baz", 42),
+		)
 		w.Write([]byte("Hello, World!"))
 	}))
 	mux.Handle("/error", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

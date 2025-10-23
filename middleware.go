@@ -2,13 +2,12 @@ package sloghttp
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
-
-	"log/slog"
 
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/trace"
@@ -277,15 +276,17 @@ func GetRequestIDFromContext(ctx context.Context) string {
 }
 
 // AddCustomAttributes adds custom attributes to the request context. This func can be called from any handler or middleware, as long as the slog-http middleware is already mounted.
-func AddCustomAttributes(r *http.Request, attr slog.Attr) {
-	AddContextAttributes(r.Context(), attr)
+func AddCustomAttributes(r *http.Request, attrs ...slog.Attr) {
+	AddContextAttributes(r.Context(), attrs...)
 }
 
 // AddContextAttributes is the same as AddCustomAttributes, but it doesn't need access to the request struct.
-func AddContextAttributes(ctx context.Context, attr slog.Attr) {
+func AddContextAttributes(ctx context.Context, attrs ...slog.Attr) {
 	if v := ctx.Value(customAttributesCtxKey); v != nil {
 		if m, ok := v.(*sync.Map); ok {
-			m.Store(attr.Key, attr.Value)
+			for _, attr := range attrs {
+				m.Store(attr.Key, attr.Value)
+			}
 		}
 	}
 }
