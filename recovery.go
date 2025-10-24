@@ -9,7 +9,7 @@ import (
 func Recovery(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
-			if err := recover(); err != nil {
+			if err := recover(); err != nil && err != http.ErrAbortHandler {
 				buf := make([]byte, 2048)
 				n := runtime.Stack(buf, false)
 				buf = buf[:n]
