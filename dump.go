@@ -24,6 +24,7 @@ type WrapResponseWriter interface {
 var _ http.ResponseWriter = (*bodyWriter)(nil)
 var _ http.Flusher = (*bodyWriter)(nil)
 var _ http.Hijacker = (*bodyWriter)(nil)
+var _ io.ReaderFrom = (*bodyWriter)(nil)
 
 type bodyWriter struct {
 	http.ResponseWriter
@@ -69,6 +70,18 @@ func (w *bodyWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	}
 
 	return nil, nil, errors.New("Hijack not supported")
+}
+
+// implements io.ReaderFrom
+func (w *bodyWriter) ReadFrom(r io.Reader) (int64, error) {
+	if w.body == nil {
+		if rf, ok := w.ResponseWriter.(io.ReaderFrom); ok {
+			n, err := rf.ReadFrom(r)
+			w.bytes += int(n)
+			return n, err
+		}
+	}
+	return io.Copy(w, r)
 }
 
 // Unwrap implements the ability to use underlying http.ResponseController
