@@ -81,7 +81,8 @@ func (w *bodyWriter) ReadFrom(r io.Reader) (int64, error) {
 			return n, err
 		}
 	}
-	return io.Copy(w, r)
+	// hide ReaderFrom interface to avoid infinite recursion
+	return io.Copy(struct{ io.Writer }{w}, r)
 }
 
 // Unwrap implements the ability to use underlying http.ResponseController
