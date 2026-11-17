@@ -32,10 +32,12 @@ type bodyWriter struct {
 	maxSize int
 	bytes   int
 	status  int
+	started bool // true once a header or body byte was sent to the client
 }
 
 // implements http.ResponseWriter
 func (w *bodyWriter) Write(b []byte) (int, error) {
+	w.started = true
 	length := len(b)
 
 	if w.body != nil {
@@ -52,7 +54,13 @@ func (w *bodyWriter) Write(b []byte) (int, error) {
 
 // implements http.ResponseWriter
 func (r *bodyWriter) WriteHeader(code int) {
-	r.status = code
+	// net/http ignores any WriteHeader after the first final one, so only track what the client gets.
+	// 1xx informational headers (except 101) may be sent several times before the final one.
+	informational := code >= 100 && code < 200 && code != http.StatusSwitchingProtocols
+	if !r.started && !informational {
+		r.started = true
+		r.status = code
+	}
 	r.ResponseWriter.WriteHeader(code)
 }
 
@@ -74,6 +82,7 @@ func (w *bodyWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // implements io.ReaderFrom
 func (w *bodyWriter) ReadFrom(r io.Reader) (int64, error) {
+	w.started = true
 	if w.body == nil {
 		if rf, ok := w.ResponseWriter.(io.ReaderFrom); ok {
 			n, err := rf.ReadFrom(r)
