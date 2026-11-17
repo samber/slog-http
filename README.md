@@ -107,7 +107,10 @@ type Config struct {
 	WithResponseHeader bool
 	WithSpanID         bool
 	WithTraceID        bool
-    WithClientIP       bool
+	WithClientIP       bool
+	WithPath           bool
+	WithQuery          bool
+	WithReferer        bool
 	WithCustomMessage  func(w http.ResponseWriter, r *http.Request) string
 
 	Filters []Filter
@@ -115,6 +118,8 @@ type Config struct {
 ```
 
 Attributes will be injected in log payload.
+
+`WithClientIP`, `WithPath`, `WithQuery` and `WithReferer` default to `true`. Set them to `false` to omit the corresponding field from the `request` group (e.g. to avoid logging sensitive query strings).
 
 Other global parameters:
 
