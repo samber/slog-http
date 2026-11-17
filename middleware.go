@@ -57,6 +57,9 @@ type Config struct {
 	WithSpanID         bool
 	WithTraceID        bool
 	WithClientIP       bool
+	WithPath           bool
+	WithQuery          bool
+	WithReferer        bool
 	WithCustomMessage  func(w http.ResponseWriter, r *http.Request) string
 
 	Filters []Filter
@@ -96,6 +99,9 @@ func DefaultConfig() Config {
 		WithSpanID:         false,
 		WithTraceID:        false,
 		WithClientIP:       true,
+		WithPath:           true,
+		WithQuery:          true,
+		WithReferer:        true,
 		WithCustomMessage:  nil,
 
 		Filters: []Filter{},
@@ -155,10 +161,19 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 					slog.Time("time", start.UTC()),
 					slog.String("method", method),
 					slog.String("host", host),
-					slog.String("path", path),
-					slog.String("query", query),
-					slog.String("referer", referer),
 				)
+
+				if config.WithPath {
+					requestAttributes = append(requestAttributes, slog.String("path", path))
+				}
+
+				if config.WithQuery {
+					requestAttributes = append(requestAttributes, slog.String("query", query))
+				}
+
+				if config.WithReferer {
+					requestAttributes = append(requestAttributes, slog.String("referer", referer))
+				}
 
 				if config.WithClientIP {
 					requestAttributes = append(requestAttributes,
