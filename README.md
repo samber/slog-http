@@ -110,11 +110,39 @@ type Config struct {
     WithClientIP       bool
 	WithCustomMessage  func(w http.ResponseWriter, r *http.Request) string
 
+	WithPanic bool
+	WithStack bool
+
 	Filters []Filter
 }
 ```
 
 Attributes will be injected in log payload.
+
+### Panic recovery
+
+`Recovery` only recovers and answers with a `500`; it never logs. The logging middleware logs the panic, whether `Recovery` is mounted inside of it or outside of it, so both orders give the same log:
+
+```go
+handler := sloghttp.Recovery(mux)
+handler = sloghttp.New(logger)(handler)
+```
+
+A panicking request is logged once, with status `500` and a `panic_type` attribute. The panic value and stack trace can contain sensitive data (e.g. PHI), so they are opt-in:
+
+```go
+config := sloghttp.DefaultConfig()
+config.WithPanic = true // adds `panic`
+config.WithStack = true // adds `stack`
+```
+
+When `Recovery` is mounted inside the logging middleware, the recovered panic is also available to the code in between, after the handler returns:
+
+```go
+if p := sloghttp.GetPanic(r); p != nil {
+	// p.Value, p.Stack, p.Type
+}
+```
 
 Other global parameters:
 

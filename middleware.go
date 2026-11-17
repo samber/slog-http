@@ -2,8 +2,10 @@ package sloghttp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -59,6 +61,9 @@ type Config struct {
 	WithClientIP       bool
 	WithCustomMessage  func(w http.ResponseWriter, r *http.Request) string
 
+	WithPanic bool
+	WithStack bool
+
 	Filters []Filter
 }
 
@@ -98,6 +103,9 @@ func DefaultConfig() Config {
 		WithClientIP:       true,
 		WithCustomMessage:  nil,
 
+		WithPanic: false,
+		WithStack: false,
+
 		Filters: []Filter{},
 	}
 }
@@ -131,7 +139,33 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 				r = r.WithContext(context.WithValue(r.Context(), customAttributesCtxKey, &sync.Map{}))
 			}
 
+			// Lets a Recovery mounted inside this middleware hand over the panic it recovered.
+			r = r.WithContext(withPanicHolder(r.Context()))
+
 			defer func() {
+				var recovered *Panic
+
+				if v := recover(); v != nil {
+					// Nothing below recovered the panic (e.g. Recovery is mounted outside of this
+					// middleware): log it, then propagate it up so that the outer middleware or
+					// net/http handles it. The deferred panic runs on every exit path, including
+					// the early return of a filter.
+					defer panic(v)
+
+					recovered = &Panic{Value: v, Type: fmt.Sprintf("%T", v)}
+					if config.WithStack {
+						recovered.Stack = string(debug.Stack())
+					}
+
+					// An outer Recovery will answer with a 500, unless the response already started.
+					if v != http.ErrAbortHandler && !bw.started {
+						bw.status = http.StatusInternalServerError
+					}
+				} else {
+					// A Recovery mounted inside this middleware may have recovered it.
+					recovered = GetPanicFromContext(r.Context())
+				}
+
 				// Pass thru filters and skip early the code below, to prevent unnecessary processing.
 				for _, filter := range config.Filters {
 					if !filter(bw, r) {
@@ -244,6 +278,17 @@ func NewWithConfig(logger *slog.Logger, config Config) func(http.Handler) http.H
 							attributes = append(attributes, slog.Attr{Key: key.(string), Value: value.(slog.Value)})
 							return true
 						})
+					}
+				}
+
+				// panic
+				if recovered != nil {
+					attributes = append(attributes, slog.String("panic_type", recovered.Type))
+					if config.WithPanic {
+						attributes = append(attributes, slog.Any("panic", recovered.Value))
+					}
+					if config.WithStack {
+						attributes = append(attributes, slog.String("stack", recovered.Stack))
 					}
 				}
 
