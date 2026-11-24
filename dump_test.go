@@ -50,3 +50,29 @@ func TestBodyWriter_ReadFrom(t *testing.T) {
 type simpleReader struct {
 	io.Reader
 }
+
+func TestBodyWriter_BodyWithoutRecording(t *testing.T) {
+	w := httptest.NewRecorder()
+	bw := newBodyWriter(w, 16, false)
+
+	if _, err := bw.Write([]byte("hello")); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := bw.Body(); len(got) != 0 {
+		t.Errorf("expected no captured body when recording is off, got %q", got)
+	}
+}
+
+func TestBodyWriter_BodyWithRecording(t *testing.T) {
+	w := httptest.NewRecorder()
+	bw := newBodyWriter(w, 16, true)
+
+	if _, err := bw.Write([]byte("hello")); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if got := string(bw.Body()); got != "hello" {
+		t.Errorf("expected captured body %q, got %q", "hello", got)
+	}
+}
