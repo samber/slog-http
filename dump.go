@@ -99,6 +99,10 @@ func (w *bodyWriter) BytesWritten() int {
 }
 
 func (w *bodyWriter) Body() []byte {
+	if w.body == nil {
+		return nil
+	}
+
 	return w.body.Bytes()
 }
 
